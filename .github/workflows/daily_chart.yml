@@ -1,23 +1,31 @@
 name: Daily Stock Charts
 
 on:
-  workflow_dispatch:
+workflow_dispatch:
+
+schedule:
+- cron: '45 12 * * 1-5'
 
 jobs:
-  run-chart-bot:
-    runs-on: ubuntu-latest
+run-chart-bot:
 
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+```
+runs-on: ubuntu-latest
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+env:
+  BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+  CHAT_ID: ${{ secrets.CHAT_ID }}
+  GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
 
-      - name: Install Packages
-        run: pip install -r requirements.txt
+steps:
 
-      - name: Run Script
-        run: python chart_bot.py
+  - uses: actions/checkout@v4
+
+  - uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
+
+  - run: pip install -r requirements.txt
+
+  - run: python chart_bot.py
+```
