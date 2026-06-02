@@ -4,6 +4,7 @@ import yfinance as yf
 import mplfinance as mpf
 import gspread
 
+from datetime import datetime
 from google.oauth2.service_account import Credentials
 
 # =========================
@@ -42,7 +43,7 @@ BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
 # =========================
-# Create Charts Folder
+# Charts Folder
 # =========================
 
 os.makedirs("charts", exist_ok=True)
@@ -74,7 +75,10 @@ for s in stocks:
         if hasattr(df.columns, "levels"):
             df.columns = df.columns.get_level_values(0)
 
-        # 52 Week High Date
+        # =========================
+        # 52 Week High Anchored Avg
+        # =========================
+
         high_date = df["High"].idxmax()
 
         anchor_df = df.loc[high_date:].copy()
@@ -87,33 +91,10 @@ for s in stocks:
 
         df["Anchored_Avg"] = anchor_df["Anchored_Avg"]
 
-        # Buy/Average Out Logic
-        prices = anchor_df["Close"].dropna().tolist()
-
-        cum_avg = []
-
-        for i in range(len(prices)):
-            cum_avg.append(sum(prices[:i+1]) / (i+1))
-
-        if len(cum_avg) < 10:
-            signal = "Short History"
-
-        else:
-
-            last_10 = cum_avg[-10:]
-
-            check = sum(
-                last_10[i] > last_10[i-1]
-                for i in range(1, len(last_10))
-            )
-
-            signal = (
-                "Buy/Average Out"
-                if check == 9
-                else "Avoid/Hold"
-            )
-
+        # =========================
         # DMAs
+        # =========================
+
         df["DMA20"] = df["Close"].rolling(20).mean()
         df["DMA50"] = df["Close"].rolling(50).mean()
         df["DMA200"] = df["Close"].rolling(200).mean()
@@ -145,6 +126,19 @@ for s in stocks:
             )
         ]
 
+        # =========================
+        # Date Format
+        # =========================
+
+        chart_date = (
+            f"{datetime.now().day} "
+            f"{datetime.now().strftime('%b %y').lower()}"
+        )
+
+        # =========================
+        # Save Chart
+        # =========================
+
         filename = f"charts/{s}.png"
 
         mpf.plot(
@@ -154,9 +148,13 @@ for s in stocks:
             volume=True,
             addplot=apds,
             figsize=(15, 8),
-            title=f"{s} | {signal}",
+            title=f"{s} | {chart_date}",
             savefig=filename
         )
+
+        # =========================
+        # Telegram
+        # =========================
 
         with open(filename, "rb") as photo:
 
@@ -164,12 +162,15 @@ for s in stocks:
                 f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
                 data={
                     "chat_id": CHAT_ID,
-                    "caption": f"{s} | {datetime.now().strftime('%d %b %y').lower()}"
+                    "caption": f"{s} | {chart_date}"
                 },
                 files={
                     "photo": photo
                 }
             )
+
+            print(f"Telegram Response for {s}")
+            print(response.text)
 
         print(f"Sent: {s}")
 
