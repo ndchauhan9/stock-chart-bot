@@ -1,38 +1,27 @@
-from datetime import datetime
+name: Daily Stock Charts
 
-# Save chart
-filename = f"charts/{s}.png"
+on:
+  workflow_dispatch:
 
-mpf.plot(
-    df,
-    type="candle",
-    style="yahoo",
-    volume=True,
-    addplot=apds,
-    figsize=(15, 8),
-    title=f"{s} | {datetime.now().day} {datetime.now().strftime('%b %y').lower()}",
-    savefig=filename
-)
+  schedule:
+    - cron: '45 12 * * 1-5'
 
-# Send to Telegram
-with open(filename, "rb") as photo:
+jobs:
+  run-chart-bot:
+    runs-on: ubuntu-latest
 
-    caption_text = (
-        f"{s} | "
-        f"{datetime.now().day} "
-        f"{datetime.now().strftime('%b %y').lower()}"
-    )
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+      GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
 
-    response = requests.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
-        data={
-            "chat_id": CHAT_ID,
-            "caption": caption_text
-        },
-        files={
-            "photo": photo
-        }
-    )
+    steps:
+      - uses: actions/checkout@v4
 
-    print(f"Telegram Response for {s}:")
-    print(response.text)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - run: python chart_bot.py
