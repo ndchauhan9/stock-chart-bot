@@ -1,0 +1,8 @@
+yfinance
+mplfinance
+gspread
+google-auth
+requests
+pandas
+numpy
+matplotlib
