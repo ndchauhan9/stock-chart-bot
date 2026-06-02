@@ -164,7 +164,7 @@ for s in stocks:
                 f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
                 data={
                     "chat_id": CHAT_ID,
-                    "caption": f"{s} | {signal}"
+                    "caption": f"{s} | {datetime.now().strftime('%d %b %y').lower()}"
                 },
                 files={
                     "photo": photo
